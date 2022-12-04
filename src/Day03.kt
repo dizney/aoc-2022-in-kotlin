@@ -25,7 +25,7 @@ fun main() {
         val commonItemsValues = input.chunked(Day03.ELF_GROUP_SIZE) {
             it
                 .map { rucksackContent -> rucksackContent.toSet() }
-                .fold(emptySet<Char>()) { acc, chars -> if (acc.isEmpty()) chars else acc.intersect(chars) }
+                .foldIndexed(emptySet<Char>()) { idx, acc, chars -> if (idx == 0) chars else acc.intersect(chars) }
                 .firstOrNull()
                 ?.mapToItemValue()
                 ?: 0
