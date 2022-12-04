@@ -5,13 +5,12 @@ object Day04 {
 
 fun main() {
 
-    fun String.parseToIntRangePerElf(): Pair<IntRange, IntRange> {
-        val intRangePerElf = this
+    fun String.parseToIntRangePerElf(): Pair<IntRange, IntRange> =
+        this
             .split(",")
             .map { it.split("-") }
             .map { (it[0].toInt())..(it[1].toInt()) }
-        return Pair(intRangePerElf[0], intRangePerElf[1])
-    }
+            .let { it[0] to it[1] }
 
     fun part1(input: List<String>): Int =
         input
