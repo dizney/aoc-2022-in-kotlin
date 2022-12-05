@@ -10,15 +10,15 @@ object Day05 {
 
 fun main() {
 
-    fun List<String>.parseStackSetup(): List<ArrayDeque<Char>> {
-        val stacks = mutableListOf<ArrayDeque<Char>>()
+    fun List<String>.parseStackSetup(): List<MutableList<Char>> {
+        val stacks = mutableListOf<MutableList<Char>>()
         for (lineIdx in this.size - 2 downTo 0) {
             val line = this[lineIdx]
             var stackIndex = 0
             var stackEntryStartPosition = 0
             while (stackEntryStartPosition < line.length) {
                 if (stacks.size < stackIndex + 1) {
-                    stacks += ArrayDeque<Char>()
+                    stacks += mutableListOf<Char>()
                 }
                 val stackEntry = line.substring(
                     stackEntryStartPosition until (stackEntryStartPosition + Day05.STACK_SETUP_ENTRY_SIZE)
@@ -35,7 +35,7 @@ fun main() {
 
     fun parseAndApplyMoves(
         input: List<String>,
-        applyMove: (stacks: List<ArrayDeque<Char>>, move: Triple<Int, Int, Int>) -> Unit
+        applyMove: (stacks: List<MutableList<Char>>, move: Triple<Int, Int, Int>) -> Unit
     ): String {
         val indexOfEmptyLine = input.indexOf("")
         val stackSetup = input.subList(0, indexOfEmptyLine).parseStackSetup()
@@ -52,7 +52,7 @@ fun main() {
 
     fun part1(input: List<String>): String {
         return parseAndApplyMoves(input) { stacks, (amount, from, to) ->
-            (1..amount).forEach { _ ->
+            repeat(amount) { _ ->
                 val toMove = stacks[from - 1].removeLast()
                 stacks[to - 1].add(toMove)
             }
