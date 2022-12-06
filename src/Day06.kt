@@ -1,3 +1,5 @@
+import kotlin.system.measureNanoTime
+
 object Day06 {
     const val EXPECTED_PART1_CHECK_ANSWER = 7
     const val EXPECTED_PART2_CHECK_ANSWER = 19
@@ -8,25 +10,46 @@ object Day06 {
 
 fun main() {
 
-    fun findLengthUntilMarker(data: String, markerLength: Int): Int {
+    fun String.findLengthUntilMarker(markerLength: Int): Int {
         var pointerInData = 0
         var potentialMarker = ""
         do {
-            when (val indexOfDuplicate = potentialMarker.indexOf(data[pointerInData])) {
-                -1 -> potentialMarker += data[pointerInData]
-                else -> potentialMarker = potentialMarker.drop(indexOfDuplicate + 1) + data[pointerInData]
+            when (val indexOfDuplicate = potentialMarker.indexOf(this[pointerInData])) {
+                -1 -> potentialMarker += this[pointerInData]
+                else -> potentialMarker = potentialMarker.drop(indexOfDuplicate + 1) + this[pointerInData]
             }
             pointerInData++
-        } while (potentialMarker.length < markerLength && pointerInData < data.length)
+        } while (potentialMarker.length < markerLength && pointerInData < this.length)
         return pointerInData
     }
 
+    fun String.findLengthUntilMarkerWindowed(markerLength: Int) =
+        windowedSequence(markerLength) { it.toSet().size }.indexOfFirst { it == markerLength } + markerLength
+
     fun part1(input: List<String>): Int {
-        return findLengthUntilMarker(input.first(), Day06.MARKER_PACKET_LENGTH)
+        val windowedDuration = measureNanoTime {
+            input.first().findLengthUntilMarkerWindowed(Day06.MARKER_PACKET_LENGTH)
+        }
+        val nonWindowedDuration = measureNanoTime {
+            input.first().findLengthUntilMarker(Day06.MARKER_PACKET_LENGTH)
+        }
+
+        println("Windowed: $windowedDuration, Non windowed: $nonWindowedDuration")
+
+        return input.first().findLengthUntilMarkerWindowed(Day06.MARKER_PACKET_LENGTH)
     }
 
     fun part2(input: List<String>): Int {
-        return findLengthUntilMarker(input.first(), Day06.MARKER_MESSAGE_LENGTH)
+        val windowedDuration = measureNanoTime {
+            input.first().findLengthUntilMarkerWindowed(Day06.MARKER_MESSAGE_LENGTH)
+        }
+        val nonWindowedDuration = measureNanoTime {
+            input.first().findLengthUntilMarker(Day06.MARKER_MESSAGE_LENGTH)
+        }
+
+        println("Windowed: $windowedDuration, Non windowed: $nonWindowedDuration")
+
+        return input.first().findLengthUntilMarkerWindowed(Day06.MARKER_MESSAGE_LENGTH)
     }
 
     // test if implementation meets criteria from the description, like:
