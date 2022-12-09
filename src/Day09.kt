@@ -1,4 +1,5 @@
 import kotlin.math.abs
+import kotlin.math.sign
 
 object Day09 {
     const val EXPECTED_PART1_CHECK_ANSWER = 13
@@ -10,30 +11,32 @@ object Day09 {
 enum class MovementDirection { U, D, L, R }
 
 fun main() {
-
-    fun Pair<Int, Int>.move(direction: MovementDirection) = when (direction) {
-        MovementDirection.U -> copy(second = second + 1)
-        MovementDirection.D -> copy(second = second - 1)
-        MovementDirection.R -> copy(first = first + 1)
-        MovementDirection.L -> copy(first = first - 1)
-    }
-
-    fun Pair<Int, Int>.moveAfterPrecursor(precursorPosition: Pair<Int, Int>): Pair<Int, Int> {
-        val xDiff = precursorPosition.first - first
-        val yDiff = precursorPosition.second - second
-        if (abs(xDiff) > 1 || abs(yDiff) > 1) {
-            return copy(
-                first = first + (if (xDiff > 0) xDiff.inc() else xDiff.dec()) / 2,
-                second = second + (if (yDiff > 0) yDiff.inc() else yDiff.dec()) / 2,
-            )
+    data class Location(val x: Int, val y: Int) {
+        fun move(direction: MovementDirection) = when (direction) {
+            MovementDirection.U -> copy(y = y + 1)
+            MovementDirection.D -> copy(y = y - 1)
+            MovementDirection.R -> copy(x = x + 1)
+            MovementDirection.L -> copy(x = x - 1)
         }
-        return this
+
+        fun moveAfterPrecursor(precursorPosition: Location): Location {
+            val xDiff = precursorPosition.x - x
+            val yDiff = precursorPosition.y - y
+            if (abs(xDiff) > 1 || abs(yDiff) > 1) {
+                return copy(
+                    x = x + (xDiff + xDiff.sign) / 2,
+                    y = y + (yDiff + yDiff.sign) / 2,
+                )
+            }
+            return this
+        }
     }
+
 
     fun part1(input: List<String>): Int {
-        val tailVisitedPositions = mutableSetOf<Pair<Int, Int>>()
-        var currentHeadPosition = Pair(0, 0)
-        var currentTailPosition = Pair(0, 0)
+        val tailVisitedPositions = mutableSetOf<Location>()
+        var currentHeadPosition = Location(0, 0)
+        var currentTailPosition = Location(0, 0)
         tailVisitedPositions.add(currentTailPosition)
         input.forEach { movement ->
             val directionAndSteps = movement.split(" ")
@@ -49,9 +52,9 @@ fun main() {
     }
 
     fun part2(input: List<String>): Int {
-        val tailVisitedPositions = mutableSetOf<Pair<Int, Int>>()
-        var currentHeadPosition = Pair(0, 0)
-        val trailPositions = MutableList(Day09.TAIL_SIZE_PART_2) { Pair(0, 0) }
+        val tailVisitedPositions = mutableSetOf<Location>()
+        var currentHeadPosition = Location(0, 0)
+        val trailPositions = MutableList(Day09.TAIL_SIZE_PART_2) { Location(0, 0) }
         tailVisitedPositions.add(trailPositions.last())
         input.forEach { movement ->
             val directionAndSteps = movement.split(" ")
