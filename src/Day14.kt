@@ -117,17 +117,6 @@ fun main() {
             .map { it.split(',') }
             .map { Coordinates(it.first().toInt(), it[1].toInt()) }
 
-    fun List<Coordinates>.findMinAndMax(): Pair<Coordinates, Coordinates> =
-        fold(Coordinates(Int.MAX_VALUE, Int.MAX_VALUE) to Coordinates(0, 0)) { (min, max), (x, y) ->
-            Coordinates(
-                minOf(min.x, x),
-                minOf(min.y, y)
-            ) to Coordinates(
-                maxOf(max.x, x),
-                maxOf(max.y, y)
-            )
-        }
-
     fun part1(input: List<String>): Int {
         val linesCoordinates = input.map(String::parseCoordinates)
         val (min, max) = (linesCoordinates.map(List<Coordinates>::findMinAndMax) + (Day14.SAND_ENTRY_COORDINATES to Day14.SAND_ENTRY_COORDINATES))
