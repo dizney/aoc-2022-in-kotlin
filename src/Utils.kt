@@ -17,6 +17,9 @@ fun String.md5() = BigInteger(1, MessageDigest.getInstance("MD5").digest(toByteA
 
 data class Location(val x: Int, val y: Int)
 
+data class Coordinates(val x: Int, val y: Int)
+data class BigCoordinates(val x: Long, val y: Long)
+
 fun List<Coordinates>.findMinAndMax(): Pair<Coordinates, Coordinates> =
     fold(Coordinates(Int.MAX_VALUE, Int.MAX_VALUE) to Coordinates(0, 0)) { (min, max), (x, y) ->
         Coordinates(

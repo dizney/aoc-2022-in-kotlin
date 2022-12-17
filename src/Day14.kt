@@ -10,8 +10,6 @@ object Day14 {
     const val PART2_GRID_MAX_X = 670
 }
 
-data class Coordinates(val x: Int, val y: Int)
-
 sealed interface Tile
 object Air : Tile
 object Rock : Tile
