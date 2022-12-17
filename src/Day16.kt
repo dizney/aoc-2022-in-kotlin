@@ -2,9 +2,12 @@ import java.util.*
 
 object Day16 {
     const val EXPECTED_PART1_CHECK_ANSWER = 1651
-    const val EXPECTED_PART2_CHECK_ANSWER = 1
+    const val EXPECTED_PART2_CHECK_ANSWER = 1707
 
-    const val RUNTIME_MINS = 30
+    const val START_VALVE_NAME = "AA"
+
+    const val RUNTIME_MINS_PART1 = 30
+    const val RUNTIME_MINS_PART2 = 26
 }
 
 data class Valve(val name: String, val flowRate: Int) {
@@ -65,27 +68,29 @@ fun main() {
         error("No shortest path found for $start to $dest")
     }
 
+    data class Opener(val currentLocation: Valve, val minutesRemaining: Int)
+
     fun releasedPressure(
-        startValve: Valve,
         distances: Map<Valve, Map<Valve, Int>>,
-        openers: Int = 1,
+        openenersData: List<Opener>,
         opened: List<Valve> = emptyList(),
         releasedPressure: Int = 0,
-        minutesRemaining: Int = Day16.RUNTIME_MINS
     ): Int {
-        return distances[startValve]!!.filter { it.key !in opened }.maxOfOrNull { (nextValve, distance) ->
-            val newMinutesRemaining = minutesRemaining - distance - 1
-            if (newMinutesRemaining > 0) {
-                releasedPressure(
-                    nextValve,
-                    distances,
-                    openers,
-                    opened = opened + nextValve,
-                    releasedPressure = releasedPressure + nextValve.flowRate * newMinutesRemaining,
-                    minutesRemaining = newMinutesRemaining
-                )
-            } else releasedPressure
-        } ?: releasedPressure
+        val openerData = openenersData.maxBy { it.minutesRemaining }
+        return distances[openerData.currentLocation]!!.filter { it.key !in opened }
+            .maxOfOrNull { (nextValve, distance) ->
+                val newMinutesRemaining = openerData.minutesRemaining - distance - 1
+                if (newMinutesRemaining > 0) {
+                    releasedPressure(
+                        distances,
+                        openenersData = openenersData.minus(openerData) + Opener(nextValve, newMinutesRemaining),
+                        opened = opened + nextValve,
+                        releasedPressure = releasedPressure + nextValve.flowRate * newMinutesRemaining,
+                    )
+                } else {
+                    releasedPressure
+                }
+            } ?: releasedPressure
     }
 
 
@@ -98,19 +103,42 @@ fun main() {
             }
         }
 
-        return releasedPressure(valvesMap[startValveName]!!, distances)
+        return releasedPressure(
+            distances,
+            openenersData = listOf(Opener(valvesMap[startValveName]!!, Day16.RUNTIME_MINS_PART1)),
+        )
     }
 
     fun part2(input: List<String>): Int {
-        return 1
+        val valvesMap = input.parseValves()
+
+        val distances = valvesMap.values.associateWith { startValve ->
+            valvesMap.values.filter { it.flowRate > 0 }.associateWith { destValve ->
+                shortestPathDistance(startValve, destValve)
+            }
+        }
+
+        val result = releasedPressure(
+            distances,
+            openenersData = listOf(
+                Opener(valvesMap[Day16.START_VALVE_NAME]!!, Day16.RUNTIME_MINS_PART2),
+                Opener(valvesMap[Day16.START_VALVE_NAME]!!, Day16.RUNTIME_MINS_PART2)
+            ),
+        )
+        println("Part 2 result $result")
+        return result
     }
 
     // test if implementation meets criteria from the description, like:
     val testInput = readInput("Day16_test")
-    check(part1(testInput, "AA") == Day16.EXPECTED_PART1_CHECK_ANSWER) { "Part 1 failed" }
+    println("Part 1 check")
+    check(part1(testInput, Day16.START_VALVE_NAME) == Day16.EXPECTED_PART1_CHECK_ANSWER) { "Part 1 failed" }
+    println("Part 2 check")
     check(part2(testInput) == Day16.EXPECTED_PART2_CHECK_ANSWER) { "Part 2 failed" }
 
     val input = readInput("Day16")
-    println(part1(input, "AA"))
+    println("Part 1")
+    println(part1(input, Day16.START_VALVE_NAME))
+    println("Part 2")
     println(part2(input))
 }
