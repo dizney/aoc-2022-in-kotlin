@@ -20,6 +20,8 @@ data class Location(val x: Int, val y: Int)
 data class Coordinates(val x: Int, val y: Int)
 data class BigCoordinates(val x: Long, val y: Long)
 
+data class Point3D(val x: Int, val y: Int, val z: Int)
+
 fun List<Coordinates>.findMinAndMax(): Pair<Coordinates, Coordinates> =
     fold(Coordinates(Int.MAX_VALUE, Int.MAX_VALUE) to Coordinates(0, 0)) { (min, max), (x, y) ->
         Coordinates(
