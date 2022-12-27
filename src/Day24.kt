@@ -4,33 +4,12 @@ object Day24 {
     const val EXPECTED_PART1_CHECK_ANSWER = 18
     const val EXPECTED_PART2_CHECK_ANSWER = 54
 
-    const val MINUTES_MAX = 600
-    const val PREVIOUS_POSITIONS_SIZE = 10
-
     data class MapInfo(val width: Int, val height: Int)
 }
 
 typealias Minutes = Int
 
-private val blizzardsInTimeCache = mutableMapOf<Minutes, Map<Coordinates, List<Direction>>>()
-private val visited = mutableMapOf<Pair<Coordinates, Minutes>, Minutes>()
-
 fun main() {
-    fun List<String>.parse() =
-        flatMapIndexed { y, line ->
-            line.mapIndexedNotNull { x, position ->
-                val coords = Coordinates(x, y)
-                when (position) {
-                    '<' -> coords to Direction.WEST
-                    '>' -> coords to Direction.EAST
-                    '^' -> coords to Direction.NORTH
-                    'v' -> coords to Direction.SOUTH
-                    else -> null
-                }
-            }
-        }
-            .groupBy(Pair<Coordinates, Direction>::first, Pair<Coordinates, Direction>::second)
-
     fun List<String>.parseToCoordinates() =
         flatMapIndexed { y, line ->
             line.mapIndexedNotNull { x, position ->
@@ -60,11 +39,18 @@ fun main() {
         }
             .map {
                 when (it.second) {
-                    Direction.WEST -> it.first.copy(x = (it.first.x - xDiff).let { newX -> if (newX < 1) gridWidth + 1 - xDiff else newX })
-                    Direction.EAST -> it.first.copy(x = (it.first.x + xDiff).let { newX -> if (newX >= 1 + gridWidth) xDiff else newX })
-                    Direction.NORTH -> it.first.copy(y = (it.first.y - yDiff).let { newY -> if (newY < 1) gridHeight + 1 - xDiff else newY })
-                    Direction.SOUTH -> it.first.copy(y = (it.first.y + yDiff).let { newY -> if (newY >= 1 + gridHeight) yDiff else newY })
+                    Direction.WEST -> it.first.copy(x = (it.first.x - xDiff)
+                        .let { newX -> if (newX < 1) newX + gridWidth else newX })
+                    Direction.EAST -> it.first.copy(x = (it.first.x + xDiff)
+                        .let { newX -> if (newX > gridWidth) newX - gridWidth else newX })
+                    Direction.NORTH -> it.first.copy(y = (it.first.y - yDiff)
+                        .let { newY -> if (newY < 1) newY + gridHeight else newY })
+                    Direction.SOUTH -> it.first.copy(y = (it.first.y + yDiff)
+                        .let { newY -> if (newY > gridHeight) newY - gridHeight else newY })
                 } to it.second
+            }
+            .also {
+//                println("Time $andTime, coords: $coordinates, blizzards: $it")
             }
             .any { (blizzardCoordinates, _) -> blizzardCoordinates == coordinates }
     }
@@ -76,28 +62,16 @@ fun main() {
         else if (x > maxX) Coordinates(minX, y)
         else this
 
-    fun Set<Coordinates>.excludeOutsideBoundaries(minX: Int, maxX: Int, minY: Int, maxY: Int, allowed: Coordinates) =
+    fun Set<Coordinates>.excludeOutsideBoundaries(
+        minX: Int,
+        maxX: Int,
+        minY: Int,
+        maxY: Int,
+        allowed: Set<Coordinates>
+    ) =
         filter { coords ->
-            (coords.y in minY..maxY && coords.x in minX..maxX) || coords == allowed
+            (coords.y in minY..maxY && coords.x in minX..maxX) || coords in allowed
         }.toSet()
-
-    fun Map<Coordinates, List<Direction>>.move(mapInfo: Day24.MapInfo): Map<Coordinates, List<Direction>> {
-        val newPositions = mutableMapOf<Coordinates, List<Direction>>()
-        val minX = 1
-        val maxX = mapInfo.width - 2
-        val minY = 1
-        val maxY = mapInfo.height - 2
-        forEach { (position, directions) ->
-            directions.forEach { direction ->
-                newPositions.compute(
-                    position.move(direction).wrap(minX, maxX, minY, maxY)
-                ) { _, currentBlizzards ->
-                    if (currentBlizzards == null) listOf(direction) else currentBlizzards + direction
-                }
-            }
-        }
-        return newPositions.toMap()
-    }
 
     fun findExitStepCount(
         blizzards: List<Pair<Coordinates, Direction>>,
@@ -105,8 +79,9 @@ fun main() {
         startPosition: Pair<Coordinates, Minutes>,
         exitPosition: Coordinates,
     ): Int {
-        val queue = ArrayDeque<Pair<Coordinates, Minutes>>(listOf(startPosition))
+        val queue = ArrayDeque(listOf(startPosition))
         val visited = mutableSetOf<Pair<Coordinates, Minutes>>()
+        val extraAllowedPositions = setOf(startPosition.first, exitPosition)
         while (queue.isNotEmpty()) {
             val (currentExpPosition, atTime) = queue.removeFirst()
             val minX = 1
@@ -114,7 +89,7 @@ fun main() {
             val minY = 1
             val maxY = mapInfo.height - 2
             currentExpPosition.adjacentPositions(false)
-                .excludeOutsideBoundaries(minX, maxX, minY, maxY, exitPosition)
+                .excludeOutsideBoundaries(minX, maxX, minY, maxY, extraAllowedPositions)
                 .filterNot { potentialExpPosition ->
                     blizzards.hasBlizzardAt(
                         potentialExpPosition,
@@ -128,8 +103,11 @@ fun main() {
                 }
                 .ifEmpty { listOf(currentExpPosition) }
                 .forEach { newNextExpPosition ->
+                    if (atTime in 291..294) {
+                        println("atTime $atTime, queue $queue, visited size: ${visited.size}")
+                    }
                     if (!visited.contains(newNextExpPosition to atTime + 1)) {
-                        if (currentExpPosition == exitPosition) {
+                        if (newNextExpPosition == exitPosition) {
                             return atTime + 1
                         }
 
@@ -142,9 +120,6 @@ fun main() {
     }
 
     fun part1(input: List<String>, exitCoordinates: Coordinates): Int {
-        blizzardsInTimeCache.clear()
-        visited.clear()
-//        val blizzards = input.parse()
         val blizzards = input.parseToCoordinates()
         val mapInfo = Day24.MapInfo(
             input[0].length, input.size
@@ -161,15 +136,17 @@ fun main() {
 
     // test if implementation meets criteria from the description, like:
     val testInput = readInput("Day24_test")
+    val part1TestResult = part1(
+        testInput,
+        Coordinates(testInput[0].length - 2, testInput.size - 1)
+    )
+    println("Part1 test: $part1TestResult")
     check(
-        part1(
-            testInput,
-            Coordinates(testInput[0].length - 2, testInput.size - 1)
-        ) == Day24.EXPECTED_PART1_CHECK_ANSWER
+        part1TestResult == Day24.EXPECTED_PART1_CHECK_ANSWER
     ) { "Part 1 failed" }
 //    check(part2(testInput) == Day24.EXPECTED_PART2_CHECK_ANSWER) { "Part 2 failed" }
 
     val input = readInput("Day24")
-    println(part1(input, Coordinates(input[0].length - 2, input.size - 1)))
+    println("part 1 result: ${part1(input, Coordinates(input[0].length - 2, input.size - 1))}")
     println(part2(input))
 }
